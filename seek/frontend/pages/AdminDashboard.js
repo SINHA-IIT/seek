@@ -1,9 +1,12 @@
 import NavBar from "../components/navBar.js";
 import RightSideBar from "../components/RightSideBar.js";
-
+import LeftSideBar  from "../components/LeftSideBar.js";
+import editcourse from "./editcourse.js";
 export default {
-    components: { NavBar, RightSideBar },
-    template: `
+    components: { NavBar, RightSideBar, LeftSideBar },
+    template: 
+    
+    `
     <div>
         <!-- Navbar -->
         <NavBar />
@@ -14,12 +17,61 @@ export default {
                 <p>Welcome, <strong>{{ userName }}</strong>!</p>
                 <p>Your role: <strong>{{ userRole }}</strong></p>
             </div>
-        </div>
+             
+          <br><button class="btn btn-success btn-add-course" @click="addcourse"> Add New Course</button>
+          <br>
+          <br><div class="card admin-stat-card p-0.5">
+    <h5>Total Students</h5>
+    <p class="fs-3">{{ totalEnrolledStudents }}</p>
+    <h5>Active Courses</h5>
+    <p class="fs-3">{{ totalcourses }}</p>
+  </div>
+        <!-- Main Content: Course Table & Engagement Charts -->
+          
+          <div class="container mt-5 text-center">
+        <h4>Active Courses List</h4>
+        <table class="table table-striped table-bordered">
+              <thead class="thead-dark">
+                <tr>
+                  <th>Course ID</th>
+                  <th>Course Code</th>
+                  <th>Course Name</th>
+                  <th>Instructor</th>
+                  <th>Modify</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="course in courses" :key="course.course_id">
+                  <td>{{ course.course_id }}</td>
+                  <td>{{ course.course_code }}</td>
+                  <td>{{ course.name }}</td>
+                  <td>{{ course.instructor_ids }}</td>
+                  <td>
+                    <button class="btn btn-success btn-edit-course" @click="editcourse"> Modify</button>
+                  </td>
+                  <td>
+                <button @click="deletecourse(course.course_id)" class="btn btn-danger btn-sm">Delete</button>
+                </td>
+                </tr>
+              </tbody>
+            </table>
 
+        <!-- Search Bar -->
+        </div><div class="form-group mb-2">
+                    <input type="text" v-model="searchQuery" class="form-control" placeholder="Search by Course Name or Description" />
+                    <button class="btn btn-primary mt-2" @click="searchCourses">Search</button>
+                </div>
         <!-- Right Sidebar -->
         <RightSideBar />
-    </div>
+   
     `,
+    data() {
+        return {
+        courses: [],
+        searchQuery: "",
+        };
+      },
     computed: {
         userName() {
             return this.$store.state.name || "Admin"; // Fetch from Vuex
@@ -27,5 +79,99 @@ export default {
         userRole() {
             return this.$store.state.role || "Administrator";
         }
-    }
+    },
+    created() {
+        // Fetch course data when the component is mounted
+        this.fetchCourses();
+      },
+    methods: {
+      addcourse() {
+        //window.location.href = "/addcourse";
+        this.$router.push("/addcourse")
+      },
+      editcourse() {
+        //window.location.href = "/addcourse";
+        this.$router.push("/editcourse")
+      },
+      async deletecourse(course_id) {
+        if (!confirm("Are you sure you want to delete this course?")) {
+          return;
+        }
+  
+        try {
+          const token = JSON.parse(localStorage.getItem("user")).token;
+          console.log(token)
+          const response = await fetch(`${location.origin}/api/course/${course_id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          console.log(response)
+          if (response.ok) {
+            alert("Course deleted successfully.");
+            this.fetchCourses(); // Refresh the course list after deletion
+          } else {
+            alert("Failed to delete the course.");
+          }
+        } catch (error) {
+          console.error("Error deleting course:", error);
+          alert("An error occurred while deleting the course.");
+        }
+      },
+      async fetchCourses(){
+        try {
+            const userData = JSON.parse(localStorage.getItem("user"));
+            const token = userData ? userData.token: null;
+            console.log(token);
+            console.log(userData);
+            //if (!userData || !userData.token) {
+              //console.error("Token not found. Please log in again.");
+              //this.$router.push("/admin-dashboard");
+  
+            const response = await fetch(`${location.origin}/api/courses`, {
+              method: "GET",
+              headers: { "Content-Type": "application/json" , Authorization: `Bearer ${token}`,},
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log(data);
+                this.courses = data; // Assign fetched courses
+                this.totalcourses = data.length;
+            } else {
+                console.error("Error fetching courses:", response.statusText);
+                alert("Failed to load course data.");
+            }
+        } catch (error) {
+            console.error("Error during API request:", error);
+            alert("An error occurred while loading course data.");
+        }
+        },
+    },
+    async searchCourses() {
+      
+        const res = await fetch(`${location.origin}/search/${this.userName}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                search: this.searchQuery,
+            }),
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            console.log("Search Results:", data);
+            this.courses = data;
+        } else {
+            console.error("Error fetching search results:", res.statusText);
+            alert("No courses found matching your search.");
+        }
+    },
+  
+  
 };
+
