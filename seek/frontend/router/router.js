@@ -7,6 +7,8 @@ import InstructorDashboard from "../pages/InstructorDashboard.js";
 import CurrentCourses from "../pages/CurrentCourses.js";
 import Course from "../pages/Course.js";
 import Profile from "../pages/Profile.js";
+import addcourse from "../pages/addcourse.js";   //abhi work
+import editcourse from "../pages/editcourse.js";
 
 const routes = [
     { path: '/', component: Home },
@@ -18,6 +20,8 @@ const routes = [
     { path: '/current-courses', component: CurrentCourses, meta: { requiresLogin: true, role: 'student' } },
     { path: '/courses', component: Course, meta: { requiresLogin: true, role: 'student' } },
     { path: '/profile', component: Profile, meta: { requiresLogin: true, role: ['student', 'instructor'] } },
+    { path: '/addcourse', component: addcourse}, //abhi work
+    { path: '/editcourse/${course_id}', component: editcourse},
 ];
 
 const router = new VueRouter({
